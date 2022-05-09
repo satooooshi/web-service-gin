@@ -9,6 +9,7 @@ export KUBECONFIG='/root/.kube/config' && export NAMESPACE='default' && go run c
 How to Run
 go get .
 export KUBECONFIG='/root/.kube/config' && export NAMESPACE='istio-test' && go run .
+swag init ./main.go
 
 go RESTful API totorial
 https://go.dev/doc/tutorial/web-service-gin
@@ -40,3 +41,13 @@ curl http://localhost:3011/api/icg/weightConfig \
     --data '{ "ns": "istio-test", "svcname": "customers", "versions": ["v1","v2"], "weights": [30, 70]}'
 
 kubectl -n istio-test get vs reviews   -o yaml
+
+swaggerUI setup
+https://qiita.com/takehanKosuke/items/bbeb7581330910e72bb2
+Goの実行時にimportエラーでハマった話。
+https://qiita.com/Qii_Takuma/items/bf2aefe066ea616c6c72
+
+swag init command not found
+https://blog.csdn.net/weixin_43262264/article/details/107339026
+export PATH="/root/go/bin:$PATH"
+swag init

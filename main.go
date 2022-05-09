@@ -17,6 +17,13 @@ import (
 	"istio.io/client-go/pkg/apis/networking/v1alpha3"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	// swagger UI
+	// docsのディレクトリを指定
+	_ "web-service-gin/docs" // ←追記
+
+	ginSwagger "github.com/swaggo/gin-swagger"   // ←追記
+	"github.com/swaggo/gin-swagger/swaggerFiles" // ←追記
 )
 
 // ac "istio.io/client-go/pkg/applyconfiguration"
@@ -36,7 +43,13 @@ func getExample(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, "Hello Istio Client Go")
 }
 
-// getAlbums responds with the list of all albums as JSON.
+// getIstioConfig responds with the list of all as JSON.
+// @Summary lists istio configurations of intio-gateway, virtual service, and destination rules.
+// @Tags Todo
+// @Produce  json
+// @Success 200
+// @Failure 400
+// @Router /api/icg/istioConfig [get]
 func getIstioConfig(c *gin.Context) {
 	kubeconfig := os.Getenv("KUBECONFIG") // os.GEtenv gets environment variable
 	namespace := os.Getenv("NAMESPACE")
@@ -107,6 +120,16 @@ func getIstioConfig(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, "Get Istio Config")
 }
 
+// postWeightConfig
+// @Summary defines weight policies that apply to traffic intended for a service after routing has occurred.
+// @Tags Todo
+// @Accept  json
+// @Produce  json
+// @Param title body string true "title"
+// @Param body body string true "body"
+// @Success 201
+// @Failure 400
+// @Router /api/icg/weightConfig [post]
 func postWeightConfig(c *gin.Context) {
 
 	var newWeights weights
@@ -241,12 +264,30 @@ func postWeightConfig(c *gin.Context) {
 	c.IndentedJSON(http.StatusCreated, vs)
 }
 
+// @BasePath /api/v1
+
+// PingExample godoc
+// @Summary ping example
+// @Schemes
+// @Description do ping
+// @Tags example
+// @Accept json
+// @Produce json
+// @Success 200 {string} Helloworld
+// @Router /example/helloworld [get]
+func Helloworld(g *gin.Context) {
+	g.JSON(http.StatusOK, "helloworld")
+}
 func main() {
 
 	router := gin.Default()
 	router.GET("/api/icg/hello", getExample)
 	router.GET("/api/icg/istioConfig", getIstioConfig)
 	router.POST("/api/icg/weightConfig", postWeightConfig)
+
+	// swagger uiを開く
+	// http://34.146.130.74:3011/swagger/index.html
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	router.Run("0.0.0.0:3011")
 

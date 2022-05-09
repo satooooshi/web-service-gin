@@ -1,0 +1,59 @@
+basePath: /api/v1
+info:
+  contact: {}
+paths:
+  /api/icg/istioConfig:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+      summary: Todo一覧を配列で返す
+      tags:
+      - Todo
+  /api/icg/weightConfig:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: title
+        in: body
+        name: title
+        required: true
+        schema:
+          type: string
+      - description: body
+        in: body
+        name: body
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: ""
+        "400":
+          description: ""
+      summary: 新規Todoを作成
+      tags:
+      - Todo
+  /example/helloworld:
+    get:
+      consumes:
+      - application/json
+      description: do ping
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: ping example
+      tags:
+      - example
+swagger: "2.0"
