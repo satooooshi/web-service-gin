@@ -24,6 +24,9 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "Istio Resouce Config"
+                ],
                 "summary": "defines load balance policy that applies to traffic intended for a service after routing has occurred.",
                 "parameters": [
                     {
@@ -55,6 +58,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/icg/getIstioConfig": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Istio Resouce Config"
+                ],
+                "summary": "lists istio configurations of intio-gateway, virtual service, and destination rules.",
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/icg/weightConfig": {
             "post": {
                 "consumes": [
@@ -62,6 +93,9 @@ const docTemplate = `{
                 ],
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "Istio Resouce Config"
                 ],
                 "summary": "defines weight policies that apply to traffic intended for a service after routing has occurred.",
                 "parameters": [
@@ -113,31 +147,6 @@ const docTemplate = `{
                         "schema": {
                             "type": "string"
                         }
-                    }
-                }
-            }
-        },
-        "/testapi/get-string-by-int/{some_id}": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "lists istio configurations of intio-gateway, virtual service, and destination rules.",
-                "responses": {
-                    "200": {
-                        "description": "ok",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
                     }
                 }
             }

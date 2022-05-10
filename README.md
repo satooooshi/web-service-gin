@@ -7,6 +7,10 @@ export KUBECONFIG='/root/.kube/config' && export NAMESPACE='default' && go run c
 
 
 How to Run
+(init first if needed.)
+rm go.mod
+go mod init web-service-gin
+
 export GO111MODULE=on
 export PATH="/root/go/bin:$PATH"
 swag init ./main.go

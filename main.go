@@ -53,12 +53,13 @@ func getExample(c *gin.Context) {
 
 // getIstioConfig responds with the list of all as JSON.
 // @Summary lists istio configurations of intio-gateway, virtual service, and destination rules.
+// @Tags Istio Resouce Config
 // @Accept  json
 // @Produce  json
 // @Success 200 {string} string	"ok"
 // @Failure 400
 // @Failure 404
-// @Router /testapi/get-string-by-int/{some_id} [get]
+// @Router /api/icg/getIstioConfig [get]
 func getIstioConfig(c *gin.Context) {
 	kubeconfig := os.Getenv("KUBECONFIG") // os.GEtenv gets environment variable
 	namespace := os.Getenv("NAMESPACE")
@@ -131,6 +132,7 @@ func getIstioConfig(c *gin.Context) {
 
 // postWeightConfig
 // @Summary defines weight policies that apply to traffic intended for a service after routing has occurred.
+// @Tags Istio Resouce Config
 // @Accept  json
 // @Produce  json
 // @Param title body string true "title"
@@ -274,6 +276,7 @@ func postWeightConfig(c *gin.Context) {
 
 // postLBConfig
 // @Summary defines load balance policy that applies to traffic intended for a service after routing has occurred.
+// @Tags Istio Resouce Config
 // @Accept  json
 // @Produce  json
 // @Param title body string true "title"

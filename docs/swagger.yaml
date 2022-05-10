@@ -28,6 +28,27 @@ paths:
           description: ""
       summary: defines load balance policy that applies to traffic intended for a
         service after routing has occurred.
+      tags:
+      - Istio Resouce Config
+  /api/icg/getIstioConfig:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+        "400":
+          description: ""
+        "404":
+          description: ""
+      summary: lists istio configurations of intio-gateway, virtual service, and destination
+        rules.
+      tags:
+      - Istio Resouce Config
   /api/icg/weightConfig:
     post:
       consumes:
@@ -54,6 +75,8 @@ paths:
           description: ""
       summary: defines weight policies that apply to traffic intended for a service
         after routing has occurred.
+      tags:
+      - Istio Resouce Config
   /example/helloworld:
     get:
       consumes:
@@ -69,21 +92,4 @@ paths:
       summary: ping example
       tags:
       - example
-  /testapi/get-string-by-int/{some_id}:
-    get:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: ok
-          schema:
-            type: string
-        "400":
-          description: ""
-        "404":
-          description: ""
-      summary: lists istio configurations of intio-gateway, virtual service, and destination
-        rules.
 swagger: "2.0"
