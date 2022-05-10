@@ -6,21 +6,24 @@ import (
 	"net/http"
 	"os"
 
+	_ "web-service-gin/docs" // ←追記
+
 	"github.com/gin-gonic/gin"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
-
-	versionedclient "istio.io/client-go/pkg/clientset/versioned"
 
 	networkingv1alpha3 "istio.io/api/networking/v1alpha3"
 	"istio.io/client-go/pkg/apis/networking/v1alpha3"
+	versionedclient "istio.io/client-go/pkg/clientset/versioned"
 
+	// for apply
+	//clientgonetworkingv1alpha3 "istio.io/client-go/pkg/applyconfiguration/networking/v1alpha3" // https://pkg.go.dev/istio.io/client-go@v1.13.3/pkg/applyconfiguration/networking/v1alpha3#VirtualServiceApplyConfiguration
+	//_ "istio.io/client-go/pkg/applyconfiguration/meta/v1"                              // https://pkg.go.dev/istio.io/client-go@v1.13.3/pkg/applyconfiguration/meta/v1#TypeMetaApplyConfiguration
+
+	// defineLBConfig
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	// swagger UI
 	// docsのディレクトリを指定
-	_ "web-service-gin/docs" // ←追記
 
 	ginSwagger "github.com/swaggo/gin-swagger"   // ←追記
 	"github.com/swaggo/gin-swagger/swaggerFiles" // ←追記
@@ -30,12 +33,17 @@ import (
 // istio.io/client-go/pkg/applyconfiguration/utils.go
 // /Users/satoshiaikawa/client-go-master/pkg/applyconfiguration/utils.go
 
-// weights represents data about a record album.
 type weights struct {
 	Ns       string   `json:"ns"`
 	Svcname  string   `json:"svcname"`
 	Versions []string `json:"versions"`
 	Weights  []int32  `json:"weights"`
+}
+
+type lb struct {
+	Ns      string `json:"ns"`
+	Svcname string `json:"svcname"`
+	Lb      string `json:"lb"`
 }
 
 // getAlbums responds with the list of all albums as JSON.
@@ -45,11 +53,12 @@ func getExample(c *gin.Context) {
 
 // getIstioConfig responds with the list of all as JSON.
 // @Summary lists istio configurations of intio-gateway, virtual service, and destination rules.
-// @Tags Todo
+// @Accept  json
 // @Produce  json
-// @Success 200
+// @Success 200 {string} string	"ok"
 // @Failure 400
-// @Router /api/icg/istioConfig [get]
+// @Failure 404
+// @Router /testapi/get-string-by-int/{some_id} [get]
 func getIstioConfig(c *gin.Context) {
 	kubeconfig := os.Getenv("KUBECONFIG") // os.GEtenv gets environment variable
 	namespace := os.Getenv("NAMESPACE")
@@ -69,7 +78,7 @@ func getIstioConfig(c *gin.Context) {
 	}
 
 	// Test VirtualServices
-	vsList, err := ic.NetworkingV1alpha3().VirtualServices(namespace).List(context.TODO(), metav1.ListOptions{})
+	vsList, err := ic.NetworkingV1alpha3().VirtualServices(namespace).List(context.TODO(), v1.ListOptions{})
 	if err != nil {
 		log.Fatalf("Failed to get VirtualService in %s namespace: %s", namespace, err)
 	}
@@ -81,7 +90,7 @@ func getIstioConfig(c *gin.Context) {
 	}
 
 	// Test DestinationRules
-	drList, err := ic.NetworkingV1alpha3().DestinationRules(namespace).List(context.TODO(), metav1.ListOptions{})
+	drList, err := ic.NetworkingV1alpha3().DestinationRules(namespace).List(context.TODO(), v1.ListOptions{})
 	if err != nil {
 		log.Fatalf("Failed to get DestinationRule in %s namespace: %s", namespace, err)
 	}
@@ -92,7 +101,7 @@ func getIstioConfig(c *gin.Context) {
 	}
 
 	// Test Gateway
-	gwList, err := ic.NetworkingV1alpha3().Gateways(namespace).List(context.TODO(), metav1.ListOptions{})
+	gwList, err := ic.NetworkingV1alpha3().Gateways(namespace).List(context.TODO(), v1.ListOptions{})
 	if err != nil {
 		log.Fatalf("Failed to get Gateway in %s namespace: %s", namespace, err)
 	}
@@ -105,7 +114,7 @@ func getIstioConfig(c *gin.Context) {
 	}
 
 	// Test ServiceEntry
-	seList, err := ic.NetworkingV1alpha3().ServiceEntries(namespace).List(context.TODO(), metav1.ListOptions{})
+	seList, err := ic.NetworkingV1alpha3().ServiceEntries(namespace).List(context.TODO(), v1.ListOptions{})
 	if err != nil {
 		log.Fatalf("Failed to get ServiceEntry in %s namespace: %s", namespace, err)
 	}
@@ -122,7 +131,6 @@ func getIstioConfig(c *gin.Context) {
 
 // postWeightConfig
 // @Summary defines weight policies that apply to traffic intended for a service after routing has occurred.
-// @Tags Todo
 // @Accept  json
 // @Produce  json
 // @Param title body string true "title"
@@ -264,6 +272,123 @@ func postWeightConfig(c *gin.Context) {
 	c.IndentedJSON(http.StatusCreated, vs)
 }
 
+// postLBConfig
+// @Summary defines load balance policy that applies to traffic intended for a service after routing has occurred.
+// @Accept  json
+// @Produce  json
+// @Param title body string true "title"
+// @Param body body string true "body"
+// @Success 201
+// @Failure 400
+// @Router /api/icg/defineLBConfig [post]
+func postLBConfig(c *gin.Context) {
+
+	var newlb lb
+
+	// Call BindJSON to bind the received JSON to
+	// newAlbum.
+	if err := c.BindJSON(&newlb); err != nil {
+		return
+	}
+
+	log.Printf("posted lb config: %+v\n", newlb)
+
+	namespace := newlb.Ns
+	kubeconfig := os.Getenv("KUBECONFIG") // os.GEtenv gets environment variable
+
+	if len(kubeconfig) == 0 || len(namespace) == 0 {
+		log.Fatalf("Environment variables KUBECONFIG and NAMESPACE need to be set")
+	}
+
+	restConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		log.Fatalf("Failed to create k8s rest client: %s", err)
+	}
+
+	ic, err := versionedclient.NewForConfig(restConfig)
+	if err != nil {
+		log.Fatalf("Failed to create istio client: %s", err)
+	}
+
+	var (
+		destinationRule *v1alpha3.DestinationRule
+		subsetList      []*networkingv1alpha3.Subset
+	)
+
+	// 设置subset
+	subset := &networkingv1alpha3.Subset{
+		Name:   "v2",
+		Labels: map[string]string{"version": "v2"},
+		//TrafficPolicy:        nil,
+
+	}
+	subsetList = append(subsetList, subset)
+
+	destinationRule = &v1alpha3.DestinationRule{
+		TypeMeta: v1.TypeMeta{},
+		ObjectMeta: v1.ObjectMeta{
+			Namespace: namespace,
+			Name:      "dr-" + newlb.Svcname,
+		},
+		Spec: networkingv1alpha3.DestinationRule{
+			Host:    newlb.Svcname,
+			Subsets: subsetList,
+			TrafficPolicy: &networkingv1alpha3.TrafficPolicy{
+				LoadBalancer: &networkingv1alpha3.LoadBalancerSettings{
+					LbPolicy: &networkingv1alpha3.LoadBalancerSettings_Simple{
+						Simple: networkingv1alpha3.LoadBalancerSettings_PASSTHROUGH,
+					},
+					LocalityLbSetting: nil,
+				},
+				ConnectionPool: &networkingv1alpha3.ConnectionPoolSettings{
+					Tcp: &networkingv1alpha3.ConnectionPoolSettings_TCPSettings{
+						// Maximum number of HTTP1 /TCP connections to a destination host. Default 2^32-1.
+						MaxConnections: 200,
+						// TCP connection timeout. format: 1h/1m/1s/1ms. MUST BE >=1ms. Default is 10s.
+						ConnectTimeout: nil,
+					},
+					Http: &networkingv1alpha3.ConnectionPoolSettings_HTTPSettings{
+						// Maximum number of pending HTTP requests to a destination. Default 2^32-1.
+						// 最大请求数
+						Http1MaxPendingRequests: 200,
+						// Maximum number of requests to a backend. Default 2^32-1.
+						// 每个后端最大请求数
+						Http2MaxRequests: 20,
+						// Maximum number of requests per connection to a backend. Setting this
+						// parameter to 1 disables keep alive. Default 0, meaning "unlimited",
+						// up to 2^29.
+						// 是否启用keepalive对后端进行长链接 0 表示启用
+						MaxRequestsPerConnection: 0,
+						// Maximum number of retries that can be outstanding to all hosts in a
+						// cluster at a given time. Defaults to 2^32-1.
+						// 在给定时间内最大的重试次数
+						MaxRetries: 1,
+						// The idle timeout for upstream connection pool connections. The idle timeout is defined as the period in which there are no active requests.
+						// If not set, the default is 1 hour. When the idle timeout is reached the connection will be closed.
+						// Note that request based timeouts mean that HTTP/2 PINGs will not keep the connection alive. Applies to both HTTP1.1 and HTTP2 connections.
+						// 不设置默认1小时没有请求，断开后端连接
+						IdleTimeout: nil,
+						// Specify if http1.1 connection should be upgraded to http2 for the associated destination.
+						//H2UpgradePolicy:          0,
+					},
+				},
+				// 类似nginx的 next upstream
+				//OutlierDetection:     nil,
+				//Tls:                  nil,
+				PortLevelSettings: nil,
+			},
+		},
+	}
+	dr, err := ic.NetworkingV1alpha3().DestinationRules(namespace).Create(context.TODO(), destinationRule, v1.CreateOptions{})
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	log.Print(dr)
+
+	c.IndentedJSON(http.StatusCreated, dr)
+}
+
 // @BasePath /api/v1
 
 // PingExample godoc
@@ -284,6 +409,7 @@ func main() {
 	router.GET("/api/icg/hello", getExample)
 	router.GET("/api/icg/istioConfig", getIstioConfig)
 	router.POST("/api/icg/weightConfig", postWeightConfig)
+	router.POST("/api/icg/postBConfig", postLBConfig)
 
 	// swagger uiを開く
 	// http://34.146.130.74:3011/swagger/index.html

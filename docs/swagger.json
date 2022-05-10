@@ -5,17 +5,37 @@
     },
     "basePath": "/api/v1",
     "paths": {
-        "/api/icg/istioConfig": {
-            "get": {
+        "/api/icg/defineLBConfig": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
-                "tags": [
-                    "Todo"
+                "summary": "defines load balance policy that applies to traffic intended for a service after routing has occurred.",
+                "parameters": [
+                    {
+                        "description": "title",
+                        "name": "title",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
                 ],
-                "summary": "Todo一覧を配列で返す",
                 "responses": {
-                    "200": {
+                    "201": {
                         "description": ""
                     },
                     "400": {
@@ -32,10 +52,7 @@
                 "produces": [
                     "application/json"
                 ],
-                "tags": [
-                    "Todo"
-                ],
-                "summary": "新規Todoを作成",
+                "summary": "defines weight policies that apply to traffic intended for a service after routing has occurred.",
                 "parameters": [
                     {
                         "description": "title",
@@ -85,6 +102,31 @@
                         "schema": {
                             "type": "string"
                         }
+                    }
+                }
+            }
+        },
+        "/testapi/get-string-by-int/{some_id}": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "lists istio configurations of intio-gateway, virtual service, and destination rules.",
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
                     }
                 }
             }
