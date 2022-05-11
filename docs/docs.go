@@ -136,7 +136,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "lb": {
-                    "type": "integer"
+                    "description": "round-robin",
+                    "type": "integer",
+                    "example": 4
                 },
                 "ns": {
                     "type": "string",
@@ -163,17 +165,23 @@ const docTemplate = `{
                     "type": "string",
                     "example": "catalog"
                 },
-                "versions example:": {
+                "versions": {
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "v1"
+                    ]
                 },
                 "weights": {
                     "type": "array",
                     "items": {
                         "type": "integer"
-                    }
+                    },
+                    "example": [
+                        100
+                    ]
                 }
             }
         }

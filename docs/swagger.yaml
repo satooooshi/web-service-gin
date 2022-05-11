@@ -3,6 +3,8 @@ definitions:
   main.lb:
     properties:
       lb:
+        description: round-robin
+        example: 4
         type: integer
       ns:
         example: istio-test
@@ -22,11 +24,15 @@ definitions:
       svcname:
         example: catalog
         type: string
-      'versions example:':
+      versions:
+        example:
+        - v1
         items:
           type: string
         type: array
       weights:
+        example:
+        - 100
         items:
           type: integer
         type: array

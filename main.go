@@ -36,15 +36,15 @@ import (
 type weights struct {
 	Ns       string   `json:"ns" example:"istio-test"`
 	Svcname  string   `json:"svcname" example:"catalog"`
-	Versions []string `json:"versions example: "[v1, v2]"`
-	Weights  []int32  `json:"weights" example: "[25, 75]"`
+	Versions []string `json:"versions" example:"v1"`
+	Weights  []int32  `json:"weights" example:"100"`
 }
 
 type lb struct {
 	Ns      string `json:"ns" example:"istio-test"`
 	Svcname string `json:"svcname" example:"catalog"`
 	Version string `json:"version" example:"v1"`
-	Lb      int32  `json:"lb" example: "4"`
+	Lb      int32  `json:"lb" example:"4"` // round-robin
 }
 
 type IstioConfigRes struct {
