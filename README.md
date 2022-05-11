@@ -13,9 +13,10 @@ go mod init web-service-gin
 
 export GO111MODULE=on
 export PATH="/root/go/bin:$PATH"
-swag init ./main.go
+swag init ./main.go --parseDependency --parseInternal --parseDepth 1
 go get .
 export KUBECONFIG='/root/.kube/config' && export NAMESPACE='istio-test' && go run .
+
 
 
 go RESTful API totorial
@@ -45,7 +46,7 @@ curl http://localhost:3011/api/icg/weightConfig \
     --include \
     --header "Content-Type: application/json" \
     --request "POST" \
-    --data '{ "ns": "istio-test", "svcname": "customers", "versions": ["v1","v2"], "weights": [30, 70]}'
+    --data '{ "ns": "istio-test", "svcname": "catalog", "versions": ["v1","v2"], "weights": [30, 70]}'
 
 kubectl -n istio-test get vs reviews   -o yaml
 
@@ -56,7 +57,6 @@ Goの実行時にimportエラーでハマった話。
 https://qiita.com/Qii_Takuma/items/bf2aefe066ea616c6c72
 
 swag init command not found
-https://blog.csdn.net/weixin_43262264/article/details/107339026
 export PATH="/root/go/bin:$PATH"
 swag init ./main.go
 

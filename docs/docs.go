@@ -16,49 +16,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/icg/defineLBConfig": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Istio Resouce Config"
-                ],
-                "summary": "defines load balance policy that applies to traffic intended for a service after routing has occurred.",
-                "parameters": [
-                    {
-                        "description": "title",
-                        "name": "title",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "body",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/api/icg/getIstioConfig": {
+        "/api/icg/istioConfig": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -79,8 +37,38 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": ""
+                    }
+                }
+            }
+        },
+        "/api/icg/lbConfig": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Istio Resouce Config"
+                ],
+                "summary": "defines load balance policy that applies to traffic intended for a service after routing has occurred.",
+                "parameters": [
+                    {
+                        "description": "new LB policy to apply to service",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/main.lb"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
                     },
-                    "404": {
+                    "400": {
                         "description": ""
                     }
                 }
@@ -100,26 +88,17 @@ const docTemplate = `{
                 "summary": "defines weight policies that apply to traffic intended for a service after routing has occurred.",
                 "parameters": [
                     {
-                        "description": "title",
-                        "name": "title",
+                        "description": "new weights config",
+                        "name": "data",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "body",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/main.weights"
                         }
                     }
                 ],
                 "responses": {
-                    "201": {
+                    "200": {
                         "description": ""
                     },
                     "400": {
@@ -151,6 +130,53 @@ const docTemplate = `{
                 }
             }
         }
+    },
+    "definitions": {
+        "main.lb": {
+            "type": "object",
+            "properties": {
+                "lb": {
+                    "type": "integer"
+                },
+                "ns": {
+                    "type": "string",
+                    "example": "istio-test"
+                },
+                "svcname": {
+                    "type": "string",
+                    "example": "catalog"
+                },
+                "version": {
+                    "type": "string",
+                    "example": "v1"
+                }
+            }
+        },
+        "main.weights": {
+            "type": "object",
+            "properties": {
+                "ns": {
+                    "type": "string",
+                    "example": "istio-test"
+                },
+                "svcname": {
+                    "type": "string",
+                    "example": "catalog"
+                },
+                "versions example:": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "weights": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        }
     }
 }`
 
@@ -158,7 +184,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "",
 	Host:             "",
-	BasePath:         "/api/v1",
+	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "",
 	Description:      "",

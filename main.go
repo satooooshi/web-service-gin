@@ -34,20 +34,37 @@ import (
 // /Users/satoshiaikawa/client-go-master/pkg/applyconfiguration/utils.go
 
 type weights struct {
-	Ns       string   `json:"ns"`
-	Svcname  string   `json:"svcname"`
-	Versions []string `json:"versions"`
-	Weights  []int32  `json:"weights"`
+	Ns       string   `json:"ns" example:"istio-test"`
+	Svcname  string   `json:"svcname" example:"catalog"`
+	Versions []string `json:"versions example: "[v1, v2]"`
+	Weights  []int32  `json:"weights" example: "[25, 75]"`
 }
 
 type lb struct {
-	Ns      string `json:"ns"`
-	Svcname string `json:"svcname"`
-	Lb      string `json:"lb"`
+	Ns      string `json:"ns" example:"istio-test"`
+	Svcname string `json:"svcname" example:"catalog"`
+	Version string `json:"version" example:"v1"`
+	Lb      int32  `json:"lb" example: "4"`
+}
+
+type IstioConfigRes struct {
+	VsList *v1alpha3.VirtualServiceList
+	drList *v1alpha3.DestinationRuleList
+	GwList *v1alpha3.GatewayList
+	SeList *v1alpha3.ServiceEntryList
+}
+
+type VsRes struct {
+	Vs *v1alpha3.VirtualService
+}
+
+type DrRes struct {
+	Dr *v1alpha3.DestinationRule
 }
 
 // getAlbums responds with the list of all albums as JSON.
 func getExample(c *gin.Context) {
+	//log.Printf("%+v\n", )
 	c.IndentedJSON(http.StatusOK, "Hello Istio Client Go")
 }
 
@@ -58,8 +75,7 @@ func getExample(c *gin.Context) {
 // @Produce  json
 // @Success 200 {string} string	"ok"
 // @Failure 400
-// @Failure 404
-// @Router /api/icg/getIstioConfig [get]
+// @Router /api/icg/istioConfig [get]
 func getIstioConfig(c *gin.Context) {
 	kubeconfig := os.Getenv("KUBECONFIG") // os.GEtenv gets environment variable
 	namespace := os.Getenv("NAMESPACE")
@@ -126,18 +142,26 @@ func getIstioConfig(c *gin.Context) {
 			log.Printf("Index: %d ServiceEntry hosts: %+v\n", i, h)
 		}
 	}
+
+	istioConfig := IstioConfigRes{
+		vsList,
+		drList,
+		gwList,
+		seList,
+	}
 	//c.IndentedJSON(http.StatusOK, "Get Istio Config")
-	c.IndentedJSON(http.StatusOK, "Get Istio Config")
+	c.IndentedJSON(http.StatusOK, istioConfig)
 }
+
+// Param data body string true '{ "ns": "istio-test", "svcname": "catalog", "versions": ["v1","v2"], "weights": [30, 70]}'
 
 // postWeightConfig
 // @Summary defines weight policies that apply to traffic intended for a service after routing has occurred.
 // @Tags Istio Resouce Config
 // @Accept  json
 // @Produce  json
-// @Param title body string true "title"
-// @Param body body string true "body"
-// @Success 201
+// @Param data body weights true "new weights config"
+// @Success 200
 // @Failure 400
 // @Router /api/icg/weightConfig [post]
 func postWeightConfig(c *gin.Context) {
@@ -239,39 +263,11 @@ func postWeightConfig(c *gin.Context) {
 	// 打印VS
 	log.Print(vs)
 
-	/*
-		//To allocate slice for request body
-		length, err := strconv.Atoi(c.Request.Header.Get("Content-Length"))
-		if err != nil {
-			//c.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+	vsRes := VsRes{
+		vs,
+	}
 
-			//Read body data to parse json
-			body := make([]byte, length)
-			length, err = c.Request.Form.Get("artist") //Body.Read(body)
-			if err != nil && err != io.EOF {
-				//c.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-
-				//parse json
-				var jsonBody map[string]interface{}
-				err = json.Unmarshal(body[:length], &jsonBody)
-				if err != nil {
-					//c.WriteHeader(http.StatusInternalServerError)
-					return
-				}
-				fmt.Printf("%v\n", jsonBody)
-				fmt.Printf("%s\n", jsonBody.artist)
-
-				//fmt.Println(b)
-				c.IndentedJSON(http.StatusCreated, jsonBody)
-	*/
-	//c.IndentedJSON(http.StatusCreated, newWeights)
-
-	c.IndentedJSON(http.StatusCreated, vs)
+	c.IndentedJSON(http.StatusCreated, vsRes)
 }
 
 // postLBConfig
@@ -279,11 +275,10 @@ func postWeightConfig(c *gin.Context) {
 // @Tags Istio Resouce Config
 // @Accept  json
 // @Produce  json
-// @Param title body string true "title"
-// @Param body body string true "body"
-// @Success 201
+// @Param data body lb true "new LB policy to apply to service"
+// @Success 200
 // @Failure 400
-// @Router /api/icg/defineLBConfig [post]
+// @Router /api/icg/lbConfig [post]
 func postLBConfig(c *gin.Context) {
 
 	var newlb lb
@@ -313,6 +308,9 @@ func postLBConfig(c *gin.Context) {
 		log.Fatalf("Failed to create istio client: %s", err)
 	}
 
+	// delete existing dr
+	ic.NetworkingV1alpha3().DestinationRules(namespace).Delete(context.TODO(), newlb.Svcname, v1.DeleteOptions{})
+
 	var (
 		destinationRule *v1alpha3.DestinationRule
 		subsetList      []*networkingv1alpha3.Subset
@@ -320,8 +318,8 @@ func postLBConfig(c *gin.Context) {
 
 	// 设置subset
 	subset := &networkingv1alpha3.Subset{
-		Name:   "v2",
-		Labels: map[string]string{"version": "v2"},
+		Name:   newlb.Version,
+		Labels: map[string]string{"version": newlb.Version},
 		//TrafficPolicy:        nil,
 
 	}
@@ -330,8 +328,8 @@ func postLBConfig(c *gin.Context) {
 	destinationRule = &v1alpha3.DestinationRule{
 		TypeMeta: v1.TypeMeta{},
 		ObjectMeta: v1.ObjectMeta{
-			Namespace: namespace,
-			Name:      "dr-" + newlb.Svcname,
+			Namespace: newlb.Ns,
+			Name:      newlb.Svcname,
 		},
 		Spec: networkingv1alpha3.DestinationRule{
 			Host:    newlb.Svcname,
@@ -339,46 +337,48 @@ func postLBConfig(c *gin.Context) {
 			TrafficPolicy: &networkingv1alpha3.TrafficPolicy{
 				LoadBalancer: &networkingv1alpha3.LoadBalancerSettings{
 					LbPolicy: &networkingv1alpha3.LoadBalancerSettings_Simple{
-						Simple: networkingv1alpha3.LoadBalancerSettings_PASSTHROUGH,
+						Simple: networkingv1alpha3.LoadBalancerSettings_SimpleLB(newlb.Lb), //networkingv1alpha3.LoadBalancerSettings_PASSTHROUGH,
 					},
 					LocalityLbSetting: nil,
 				},
-				ConnectionPool: &networkingv1alpha3.ConnectionPoolSettings{
-					Tcp: &networkingv1alpha3.ConnectionPoolSettings_TCPSettings{
-						// Maximum number of HTTP1 /TCP connections to a destination host. Default 2^32-1.
-						MaxConnections: 200,
-						// TCP connection timeout. format: 1h/1m/1s/1ms. MUST BE >=1ms. Default is 10s.
-						ConnectTimeout: nil,
+				/*
+					ConnectionPool: &networkingv1alpha3.ConnectionPoolSettings{
+						Tcp: &networkingv1alpha3.ConnectionPoolSettings_TCPSettings{
+							// Maximum number of HTTP1 /TCP connections to a destination host. Default 2^32-1.
+							MaxConnections: 200,
+							// TCP connection timeout. format: 1h/1m/1s/1ms. MUST BE >=1ms. Default is 10s.
+							ConnectTimeout: nil,
+						},
+						Http: &networkingv1alpha3.ConnectionPoolSettings_HTTPSettings{
+							// Maximum number of pending HTTP requests to a destination. Default 2^32-1.
+							// 最大请求数
+							Http1MaxPendingRequests: 200,
+							// Maximum number of requests to a backend. Default 2^32-1.
+							// 每个后端最大请求数
+							Http2MaxRequests: 20,
+							// Maximum number of requests per connection to a backend. Setting this
+							// parameter to 1 disables keep alive. Default 0, meaning "unlimited",
+							// up to 2^29.
+							// 是否启用keepalive对后端进行长链接 0 表示启用
+							MaxRequestsPerConnection: 0,
+							// Maximum number of retries that can be outstanding to all hosts in a
+							// cluster at a given time. Defaults to 2^32-1.
+							// 在给定时间内最大的重试次数
+							MaxRetries: 1,
+							// The idle timeout for upstream connection pool connections. The idle timeout is defined as the period in which there are no active requests.
+							// If not set, the default is 1 hour. When the idle timeout is reached the connection will be closed.
+							// Note that request based timeouts mean that HTTP/2 PINGs will not keep the connection alive. Applies to both HTTP1.1 and HTTP2 connections.
+							// 不设置默认1小时没有请求，断开后端连接
+							IdleTimeout: nil,
+							// Specify if http1.1 connection should be upgraded to http2 for the associated destination.
+							//H2UpgradePolicy:          0,
+						},
 					},
-					Http: &networkingv1alpha3.ConnectionPoolSettings_HTTPSettings{
-						// Maximum number of pending HTTP requests to a destination. Default 2^32-1.
-						// 最大请求数
-						Http1MaxPendingRequests: 200,
-						// Maximum number of requests to a backend. Default 2^32-1.
-						// 每个后端最大请求数
-						Http2MaxRequests: 20,
-						// Maximum number of requests per connection to a backend. Setting this
-						// parameter to 1 disables keep alive. Default 0, meaning "unlimited",
-						// up to 2^29.
-						// 是否启用keepalive对后端进行长链接 0 表示启用
-						MaxRequestsPerConnection: 0,
-						// Maximum number of retries that can be outstanding to all hosts in a
-						// cluster at a given time. Defaults to 2^32-1.
-						// 在给定时间内最大的重试次数
-						MaxRetries: 1,
-						// The idle timeout for upstream connection pool connections. The idle timeout is defined as the period in which there are no active requests.
-						// If not set, the default is 1 hour. When the idle timeout is reached the connection will be closed.
-						// Note that request based timeouts mean that HTTP/2 PINGs will not keep the connection alive. Applies to both HTTP1.1 and HTTP2 connections.
-						// 不设置默认1小时没有请求，断开后端连接
-						IdleTimeout: nil,
-						// Specify if http1.1 connection should be upgraded to http2 for the associated destination.
-						//H2UpgradePolicy:          0,
-					},
-				},
+				*/
 				// 类似nginx的 next upstream
 				//OutlierDetection:     nil,
 				//Tls:                  nil,
-				PortLevelSettings: nil,
+				//PortLevelSettings: nil,
 			},
 		},
 	}
@@ -389,10 +389,14 @@ func postLBConfig(c *gin.Context) {
 	}
 	log.Print(dr)
 
-	c.IndentedJSON(http.StatusCreated, dr)
+	drRes := DrRes{
+		dr,
+	}
+
+	c.IndentedJSON(http.StatusCreated, drRes)
 }
 
-// @BasePath /api/v1
+// @BasePath /
 
 // PingExample godoc
 // @Summary ping example
@@ -412,7 +416,7 @@ func main() {
 	router.GET("/api/icg/hello", getExample)
 	router.GET("/api/icg/istioConfig", getIstioConfig)
 	router.POST("/api/icg/weightConfig", postWeightConfig)
-	router.POST("/api/icg/postBConfig", postLBConfig)
+	router.POST("/api/icg/lbConfig", postLBConfig)
 
 	// swagger uiを開く
 	// http://34.146.130.74:3011/swagger/index.html

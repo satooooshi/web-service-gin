@@ -1,36 +1,40 @@
-basePath: /api/v1
+basePath: /
+definitions:
+  main.lb:
+    properties:
+      lb:
+        type: integer
+      ns:
+        example: istio-test
+        type: string
+      svcname:
+        example: catalog
+        type: string
+      version:
+        example: v1
+        type: string
+    type: object
+  main.weights:
+    properties:
+      ns:
+        example: istio-test
+        type: string
+      svcname:
+        example: catalog
+        type: string
+      'versions example:':
+        items:
+          type: string
+        type: array
+      weights:
+        items:
+          type: integer
+        type: array
+    type: object
 info:
   contact: {}
 paths:
-  /api/icg/defineLBConfig:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: title
-        in: body
-        name: title
-        required: true
-        schema:
-          type: string
-      - description: body
-        in: body
-        name: body
-        required: true
-        schema:
-          type: string
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: ""
-        "400":
-          description: ""
-      summary: defines load balance policy that applies to traffic intended for a
-        service after routing has occurred.
-      tags:
-      - Istio Resouce Config
-  /api/icg/getIstioConfig:
+  /api/icg/istioConfig:
     get:
       consumes:
       - application/json
@@ -43,10 +47,30 @@ paths:
             type: string
         "400":
           description: ""
-        "404":
-          description: ""
       summary: lists istio configurations of intio-gateway, virtual service, and destination
         rules.
+      tags:
+      - Istio Resouce Config
+  /api/icg/lbConfig:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: new LB policy to apply to service
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/main.lb'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+      summary: defines load balance policy that applies to traffic intended for a
+        service after routing has occurred.
       tags:
       - Istio Resouce Config
   /api/icg/weightConfig:
@@ -54,22 +78,16 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: title
+      - description: new weights config
         in: body
-        name: title
+        name: data
         required: true
         schema:
-          type: string
-      - description: body
-        in: body
-        name: body
-        required: true
-        schema:
-          type: string
+          $ref: '#/definitions/main.weights'
       produces:
       - application/json
       responses:
-        "201":
+        "200":
           description: ""
         "400":
           description: ""
